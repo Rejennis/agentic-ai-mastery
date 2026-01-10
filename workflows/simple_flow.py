@@ -10,24 +10,42 @@ from agents.planner.planner_agent import PlannerAgent
 from agents.executor.web.web_executor_agent import WebExecutorAgent
 from agents.critic.critic_agent import CriticAgent
 
+
 def run():
     planner = PlannerAgent()
     web_executor = WebExecutorAgent()
     critic = CriticAgent()
 
-    message = {
+    # Initial request (simulating Router → Planner)
+    initial_message = {
         "MessageType": "WebTestExecutionRequest",
         "Sender": "RouterAgent",
         "Recipient": "PlannerAgent",
-        "CorrelationId": "test-123",
-        "Payload": {}
+        "CorrelationId": "corr-001",
+        "Payload": {
+            "feature": "User Signup",
+            "risk_areas": ["form validation", "email verification"],
+        },
     }
 
-    plan = planner.receive(message)
-    execution = web_executor.receive(plan)
-    review = critic.receive(execution)
+    plan = planner.receive(initial_message)
+    execution_result = web_executor.receive(plan)
+    feedback = critic.receive(execution_result)
+
+    # Feedback loop (stubbed): route back to planner if severity isn't informational.
+    if feedback.get("Payload", {}).get("severity_level") not in {"info", "low"}:
+        planner.receive(feedback)
+
+    return {
+        "plan": plan,
+        "execution_result": execution_result,
+        "feedback": feedback,
+    }
+
 
 if __name__ == "__main__":
-    run()
+    results = run()
+    print("\nFinal outputs:")
+    print(results)
 
 
